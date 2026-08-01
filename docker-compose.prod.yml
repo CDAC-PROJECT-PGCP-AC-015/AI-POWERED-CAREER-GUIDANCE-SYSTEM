@@ -1,0 +1,98 @@
+# Production deployment: everything behind Caddy on one domain with
+# automatic HTTPS. Postgres and ml-service are NOT exposed to the host here
+# (no `ports:` on them) — only reachable from other containers on the
+# compose network, unlike docker-compose.yml which is for local dev.
+#
+# Usage (see DEPLOY.md for the full walkthrough):
+#   1. cp .env.example .env   and fill in real values
+#   2. docker compose -f docker-compose.prod.yml up -d --build
+#   3. docker compose -f docker-compose.prod.yml exec backend npm run db:push
+#   4. docker compose -f docker-compose.prod.yml exec backend npm run seed
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: career_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set a real password in .env}
+      POSTGRES_DB: career_guidance
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U career_admin -d career_guidance"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ml-service:
+    build: ./ml-service
+    restart: unless-stopped
+    environment:
+      MODEL_PATH: /app/career_xgboost_model.pkl
+    volumes:
+      - ./ml-service/career_xgboost_model.pkl:/app/career_xgboost_model.pkl:ro
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://career_admin:${POSTGRES_PASSWORD:?set a real password in .env}@postgres:5432/career_guidance?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set a long random string in .env}
+      JWT_EXPIRES_IN: 24h
+      CAREER_MODEL_URL: http://ml-service:8000/predict
+      PORT: 5001
+      # Same-origin via Caddy, but set for defense-in-depth / direct access.
+      CORS_ORIGIN: https://${DOMAIN:?set your domain in .env}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ml-service:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Relative path — same-origin through Caddy, so no CORS and no
+        # hardcoded domain baked into the frontend bundle.
+        VITE_API_URL: /api
+    restart: unless-stopped
+    environment:
+      # career-engine.server.ts runs on this container's Node server at
+      # RUNTIME (see frontend/Dockerfile — NITRO_PRESET=node-server), unlike
+      # VITE_API_URL above which is baked in at build time. So the LLM/ML
+      # vars go here, not in `args:`.
+      CAREER_MODEL_URL: http://ml-service:8000/predict
+      CAREER_MODEL_KEY: ${CAREER_MODEL_KEY:-}
+      BACKEND_API_URL: http://backend:5001/api
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      LLM_MODEL: ${LLM_MODEL:-openai/gpt-4o-mini}
+      LLM_FALLBACK_API_KEY: ${LLM_FALLBACK_API_KEY:-}
+      LLM_FALLBACK_BASE_URL: ${LLM_FALLBACK_BASE_URL:-https://api.groq.com/openai/v1}
+      LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-llama-3.3-70b-versatile}
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set your domain in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

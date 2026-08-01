@@ -1,0 +1,21 @@
+# Caddy automatically obtains and renews a Let's Encrypt HTTPS certificate
+# for whatever domain you put here — no manual certbot/nginx config needed.
+#
+# Set the real domain via the DOMAIN env var (see .env.example at repo root).
+# Caddy substitutes {$DOMAIN} from the environment at startup.
+
+{$DOMAIN} {
+	# Anything under /api goes to the backend. Same-origin (no CORS needed)
+	# because the browser only ever talks to {$DOMAIN}, never directly to
+	# the backend container.
+	handle /api/* {
+		reverse_proxy backend:5001
+	}
+
+	# Everything else (the app itself) goes to the frontend's Node server.
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	encode gzip
+}

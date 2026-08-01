@@ -1,0 +1,67 @@
+# Brings up the full backend of the SDD's 3-tier architecture:
+#   Postgres (data layer) + ml-service (FastAPI/XGBoost) + backend (Node/Express)
+#
+# The React frontend is NOT containerized here — run it separately with
+# `npm run dev` from frontend/ and point it at http://localhost:5001.
+#
+# Usage:
+#   1. Drop your real trained model at ml-service/career_xgboost_model.pkl
+#   2. docker compose up -d --build
+#   3. docker compose exec backend npm run db:migrate
+#   4. docker compose exec backend npm run seed
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: career_admin
+      POSTGRES_PASSWORD: career_pass
+      POSTGRES_DB: career_guidance
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U career_admin -d career_guidance"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ml-service:
+    build: ./ml-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_PATH: /app/career_xgboost_model.pkl
+    volumes:
+      - ./ml-service/career_xgboost_model.pkl:/app/career_xgboost_model.pkl:ro
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      DATABASE_URL: postgresql://career_admin:career_pass@postgres:5432/career_guidance?schema=public
+      JWT_SECRET: change-this-to-a-long-random-string
+      JWT_EXPIRES_IN: 24h
+      CAREER_MODEL_URL: http://ml-service:8000/predict
+      PORT: 5001
+      CORS_ORIGIN: http://localhost:8080
+      # Pulled from the shell env or a .env file next to this compose file
+      # (docker compose auto-loads that). Leave unset and this feature
+      # gracefully falls back — see backend/.env.example for what it does.
+      # NOTE: LLM keys are NOT set here — the frontend isn't containerized
+      # in this dev compose file (run it with `npm run dev`, which reads
+      # frontend/.env directly — see frontend/.env.example).
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ml-service:
+        condition: service_started
+
+volumes:
+  pgdata:

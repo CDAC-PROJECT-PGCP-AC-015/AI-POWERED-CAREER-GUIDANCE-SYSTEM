@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+*.local
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Backend / ML service
+backend/.env
+backend/dist
+ml-service/__pycache__/
+ml-service/*.pkl
+# ...except the real trained model — Render/Railway/etc. build from git, so
+# if this stayed ignored, a git-based deploy would silently ship an
+# ml-service with no model file at all. It's ~10MB, well under GitHub's
+# 100MB per-file limit.
+!ml-service/career_xgboost_model.pkl
+ml-service/.venv
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
