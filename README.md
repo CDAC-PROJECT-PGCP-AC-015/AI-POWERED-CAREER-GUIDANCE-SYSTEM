@@ -205,6 +205,7 @@ AI-POWERED-CAREER-GUIDANCE-SYSTEM/
 ├── ml-service/                Python + FastAPI
 │   ├── app.py                  /predict, /health, /vocab, /reload
 │   └── career_xgboost_model.pkl
+|
 ├── docker-compose.yml          Local dev stack
 ├── docker-compose.prod.yml      Production stack (with Caddy)
 ├── DEPLOY.md                    Docker deployment guide
