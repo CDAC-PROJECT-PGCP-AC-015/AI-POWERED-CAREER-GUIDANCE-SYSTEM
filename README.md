@@ -56,32 +56,32 @@ The system is split into **four independently deployable services**, each doing 
 
 ```
                     ┌─────────────────────┐
-                    │      Frontend        │
-                    │  React + TanStack     │
-                    │  Start (Cloudflare     │
-                    │       Workers)         │
-                    └──────────┬────────────┘
+                    │      Frontend       │
+                    │  React + TanStack   │
+                    │  Start (Cloudflare  │
+                    │       Workers)      │
+                    └──────────┬──────────┘
                                │ REST (JWT auth)
                                ▼
-                    ┌─────────────────────┐        ┌──────────────────┐
-                    │      Backend          │───────▶│   PostgreSQL      │
-                    │ Node.js + Express      │◀───────│   (Neon, managed)  │
-                    │      (Render)          │        └──────────────────┘
-                    └──────────┬────────────┘
+                    ┌─────────────────────┐         ┌──────────────────┐
+                    │      Backend        │───────▶│   PostgreSQL      │
+                    │ Node.js + Express   │◀────── │   (Neon, managed) │
+                    │      (Render)       │         └──────────────────┘
+                    └──────────┬──────────┘
                                │ live job/course/company search
                                ▼
                     ┌─────────────────────┐
-                    │       Tavily          │
-                    │   (web search API)     │
+                    │       Tavily        │
+                    │   (web search API)  │
                     └─────────────────────┘
 
   Frontend also calls, directly and server-side only:
 
-                    ┌─────────────────────┐        ┌──────────────────┐
-                    │      ML Service        │        │   LLM Provider     │
-                    │ Python + FastAPI       │        │ OpenRouter (primary)│
-                    │ + XGBoost (Render)      │        │  → Groq (fallback)  │
-                    └─────────────────────┘        └──────────────────┘
+                    ┌─────────────────────┐        ┌─────────────────────┐
+                    │      ML Service     │        │   LLM Provider      │
+                    │ Python + FastAPI    │        │ OpenRouter (primary)│
+                    │ + XGBoost (Render)  │        │  → Groq (fallback)  │
+                    └─────────────────────┘        └─────────────────────┘
 ```
 
 **Why this split instead of one monolith?**
