@@ -192,12 +192,16 @@ AI-POWERED-CAREER-GUIDANCE-SYSTEM/
 │       │   ├── career-data.ts            ← Shared types + curated fallback content
 │       │   └── app-store.tsx             ← Global client state (React Context)
 │       └── components/
+|
+|
 ├── backend/                  Node.js + Express + Drizzle
 │   └── src/
 │       ├── routes/            auth, profile, assessments, mentors, courses,
 │       │                      jobs, discover, connections, messages, admin
 │       ├── db/                 schema.ts, client.ts
 │       └── seed/                demo data seeding
+|
+|
 ├── ml-service/                Python + FastAPI
 │   ├── app.py                  /predict, /health, /vocab, /reload
 │   └── career_xgboost_model.pkl
