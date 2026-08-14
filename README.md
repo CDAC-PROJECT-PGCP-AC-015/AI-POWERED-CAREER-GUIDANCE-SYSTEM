@@ -6,6 +6,7 @@ tech roles, LLM-generated guidance grounded in real data, and a full mentor/cour
 workflow — all backed by a real PostgreSQL database.
 
 **Live app:** https://career-guidance.ai-career-guidance.workers.dev/
+
 **Repository:** https://github.com/CDAC-PROJECT-PGCP-AC-015/AI-POWERED-CAREER-GUIDANCE-SYSTEM
 
 ---
